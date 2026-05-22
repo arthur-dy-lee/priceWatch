@@ -62,6 +62,17 @@ def serve() -> None:
     serve_blocking()
 
 
+@cli.command()
+@click.option("--no-evict", is_flag=True, help="Don't evict other models from GPU")
+def warmup(no_evict: bool) -> None:
+    """Pin the NLU model in Ollama GPU memory (keep_alive=24h)."""
+    from .nlu import warmup_ollama
+    ok = asyncio.run(warmup_ollama(evict_others=not no_evict))
+    if not ok:
+        raise click.ClickException("warmup did not complete cleanly — see logs")
+    click.echo("ollama: model pinned, keep_alive=24h")
+
+
 # ---------------------------------------------------------------- read-only
 
 @cli.command("list-sources")

@@ -53,6 +53,11 @@ async def _run() -> None:
     from .ipc import build_app, run_server
     ipc_task = asyncio.create_task(run_server(build_app(reloader)))
 
+    # Fire-and-forget Ollama warmup so the first /parse isn't cold.
+    # No-op for non-ollama backends. Failures are logged, not fatal.
+    from .nlu import warmup_ollama
+    asyncio.create_task(warmup_ollama())
+
     logger.info("priceWatch running. Ctrl-C to stop.")
     try:
         while True:
