@@ -10,12 +10,29 @@ from .base import Notifier
 
 
 class TelegramNotifier(Notifier):
-    """Sends via Bot API. Credentials default to env vars on Settings."""
+    """Sends via Bot API.
 
-    def __init__(self, bot_token_env: str = "TELEGRAM_BOT_TOKEN",
-                 chat_id_env: str = "TELEGRAM_CHAT_ID") -> None:
-        self.token = os.getenv(bot_token_env) or settings.telegram_bot_token
-        self.chat_id = os.getenv(chat_id_env) or settings.telegram_chat_id
+    Accepts either the new shape:
+        token: "..."       # literal string (may come from ${VAR} expansion)
+        chat_id: "..."
+
+    or the legacy shape (kept for backward-compat):
+        bot_token_env: TELEGRAM_BOT_TOKEN
+        chat_id_env: TELEGRAM_CHAT_ID
+    """
+
+    def __init__(self, **kwargs) -> None:
+        token = kwargs.get("token")
+        chat_id = kwargs.get("chat_id")
+
+        if not token and "bot_token_env" in kwargs:
+            token = os.getenv(kwargs["bot_token_env"], "") or settings.telegram_bot_token
+        if not chat_id and "chat_id_env" in kwargs:
+            chat_id = os.getenv(kwargs["chat_id_env"], "") or settings.telegram_chat_id
+
+        # Fallback to Settings defaults if still empty
+        self.token = (token or "").strip() or settings.telegram_bot_token
+        self.chat_id = str(chat_id or "").strip() or settings.telegram_chat_id
 
     async def send(self, title: str, body: str) -> None:
         if not self.token or not self.chat_id:

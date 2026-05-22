@@ -14,10 +14,14 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "pyyaml>=6.0",
+    "ruamel.yaml>=0.18",
     "simpleeval>=0.9.13",
     "click>=8.1",
     "loguru>=0.7",
     "python-dotenv>=1.0",
+    "watchdog>=4.0",
+    "fastapi>=0.110",
+    "uvicorn>=0.30",
 ]
 
 [project.optional-dependencies]

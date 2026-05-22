@@ -15,9 +15,26 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # --- Telegram ---
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
+    fireup_notify_bot_token: str = ""
 
+    # --- NLU ---
+    pricewatch_nlu_backend: str = "ollama"
+    ollama_host: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.1:8b"
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-6"
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
+    # --- IPC ---
+    pricewatch_ipc_host: str = "127.0.0.1"
+    pricewatch_ipc_port: int = 8765
+    pricewatch_ipc_token: str = ""
+
+    # --- Storage / runtime ---
     pricewatch_db_path: str = "data/pricewatch.db"
     pricewatch_log_level: str = "INFO"
     pricewatch_user_agent: str = (

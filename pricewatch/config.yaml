@@ -51,7 +51,19 @@ rules:
     message: "FuelCell Rebel v5 dropped below $100 — check stock & size."
 
 notifiers:
+  # Each notifier has a name. Rules reference these names in their `notify:` list.
+  # Token/chat_id can be inlined with ${VAR} expansion from .env.
   telegram:
-    bot_token_env: TELEGRAM_BOT_TOKEN
-    chat_id_env: TELEGRAM_CHAT_ID
-  macos: {}
+    type: telegram
+    token: ${TELEGRAM_BOT_TOKEN}
+    chat_id: ${TELEGRAM_CHAT_ID}
+
+  # Reuse the matrixApps "notify" bot if you've copied the token over.
+  # Otherwise leave token blank — sends will warn-and-skip.
+  telegram_matrixapps:
+    type: telegram
+    token: ${FIREUP_NOTIFY_BOT_TOKEN}
+    chat_id: ${TELEGRAM_CHAT_ID}
+
+  macos:
+    type: macos

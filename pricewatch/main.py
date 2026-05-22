@@ -1,19 +1,16 @@
-"""Entry point: load config → schedule sources → on each tick: fetch, store, evaluate, notify."""
+"""Entry point: scheduler + hot-reload watcher + HTTP IPC, all in one loop."""
 from __future__ import annotations
 
 import asyncio
 import sys
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 
-from .config_loader import load_config
-from .notifiers import build_notifiers
+from .reloader import ConfigReloader, start_watcher
 from .rules.engine import RuleEngine
 from .settings import settings
-from .signals import SignalKind
 from .sources.base import Source
-from .sources.registry import get_source_class
-from .scheduler import build_scheduler
 from .storage import get_db
 
 
@@ -23,26 +20,14 @@ def _setup_logging() -> None:
     logger.add("logs/pricewatch.log", level="DEBUG", rotation="10 MB", retention=5)
 
 
-def _build_sources(cfg) -> list[Source]:
-    out = []
-    for s in cfg.sources:
-        cls = get_source_class(s.type)
-        out.append(cls(name=s.name, cfg=s.cfg))
-    return out
-
-
-async def _run():
+async def _run() -> None:
     _setup_logging()
-    cfg = load_config()
     db = get_db()
-    sources = _build_sources(cfg)
-    notifiers = build_notifiers(cfg.notifiers)
+    loop = asyncio.get_running_loop()
+    sched = AsyncIOScheduler()
+    sched.start()
 
-    # Map source name -> SignalKind for the rule engine.
-    source_kinds = {s.name: s.kind for s in sources}
-    engine = RuleEngine(db, source_kinds)
-
-    async def on_fetch(src: Source):
+    async def on_fetch(src: Source) -> None:
         try:
             sig = await src.fetch()
             db.insert_snapshot(sig)
@@ -51,21 +36,22 @@ async def _run():
             logger.exception(f"[{src.name}] fetch failed: {e!r}")
             return
 
-        # After every fetch, re-evaluate rules that mention this source.
-        results = engine.evaluate(cfg.rules)
-        for res in results:
+        # Re-evaluate rules using the latest cfg snapshot.
+        engine = RuleEngine(db, reloader.source_kinds)
+        for res in engine.evaluate(reloader.cfg.rules):
             if not res.triggered:
                 continue
             logger.warning(f"RULE FIRED: {res.rule.name} — {res.value_repr}")
             db.record_fire(res.rule.name, {"reason": res.reason})
-            await _notify(res, notifiers)
+            await _notify(res, reloader.notifiers)
 
-    sched = build_scheduler(sources, on_fetch)
-    sched.start()
+    reloader = ConfigReloader(sched, on_fetch, loop)
+    reloader.apply(immediate_fetch=True)
+    observer = start_watcher(reloader)
 
-    # Kick off one immediate fetch for each source so we're not waiting an hour.
-    for src in sources:
-        asyncio.create_task(on_fetch(src))
+    # Start HTTP IPC in the background.
+    from .ipc import build_app, run_server
+    ipc_task = asyncio.create_task(run_server(build_app(reloader)))
 
     logger.info("priceWatch running. Ctrl-C to stop.")
     try:
@@ -73,6 +59,10 @@ async def _run():
             await asyncio.sleep(3600)
     except (KeyboardInterrupt, asyncio.CancelledError):
         logger.info("shutting down")
+    finally:
+        observer.stop()
+        observer.join(timeout=2)
+        ipc_task.cancel()
         sched.shutdown(wait=False)
 
 
