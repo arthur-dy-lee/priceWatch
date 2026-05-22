@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     # --- NLU ---
     pricewatch_nlu_backend: str = "ollama"
     ollama_host: str = "http://127.0.0.1:11434"
-    ollama_model: str = "llama3.1:8b"
+    ollama_model: str = "qwen3.6:35b"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-6"
     openai_api_key: str = ""

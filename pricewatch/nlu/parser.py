@@ -52,7 +52,9 @@ async def _call_ollama(messages: list[dict]) -> str:
         "options": {"temperature": 0},
         "format": "json",
     }
-    async with httpx.AsyncClient(timeout=120) as client:
+    # Ollama is local — bypass any HTTP/SOCKS proxy in env (trust_env=False)
+    # so users with ALL_PROXY etc don't need httpx[socks] just to hit 127.0.0.1.
+    async with httpx.AsyncClient(timeout=120, trust_env=False) as client:
         r = await client.post(f"{settings.ollama_host.rstrip('/')}/api/chat", json=payload)
         r.raise_for_status()
         return r.json()["message"]["content"]
