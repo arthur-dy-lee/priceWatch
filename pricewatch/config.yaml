@@ -1,0 +1,45 @@
+# priceWatch config — user-editable.
+#
+# Reference:
+#   docs/RULES.md   — rule syntax, debounce/cooldown semantics
+#   docs/FIELDS.md  — derived fields per signal kind
+#
+# Try things out:
+#   pricewatch list-sources
+#   pricewatch fetch --source nb_993_grey
+#   pricewatch fields --source nb_993_grey
+#   pricewatch test-rule "nb_993_grey.price < 1200"
+
+sources:
+  - name: nb_993_grey
+    type: newbalance
+    url: https://www.newbalance.com/pd/made-in-usa-993/M993-MUSA.html
+    interval: 1h
+
+# Add more later, e.g.:
+#  - name: jd_airpods_pro
+#    type: jd               # not yet implemented in v0.1
+#    sku: "100012043978"
+#    interval: 30m
+
+rules:
+  - name: 993 跌破 1000
+    when: "nb_993_grey.price < 1000"
+    notify: [telegram]
+    cooldown: 6h
+
+  - name: 993 一周跌幅超 10%
+    when: "nb_993_grey.pct_change_7d <= -10"
+    notify: [telegram, macos]
+    cooldown: 12h
+
+  - name: 993 触及 30 天新低
+    when: "nb_993_grey.price <= nb_993_grey.min_30d"
+    notify: [telegram]
+    cooldown: 24h
+
+notifiers:
+  telegram:
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id_env: TELEGRAM_CHAT_ID
+  macos: {}

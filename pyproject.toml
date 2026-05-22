@@ -1,0 +1,48 @@
+[project]
+name = "pricewatch"
+version = "0.1.0"
+description = "Local sentinel for prices, stocks, and odds — collect, derive, alert."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Arthur Lee" }]
+
+dependencies = [
+    "httpx>=0.27",
+    "parsel>=1.9",
+    "apscheduler>=3.10",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "pyyaml>=6.0",
+    "simpleeval>=0.9.13",
+    "click>=8.1",
+    "loguru>=0.7",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.44"]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+pricewatch = "pricewatch.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pricewatch"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
