@@ -16,6 +16,12 @@ sources:
     url: https://www.newbalance.com/pd/made-in-usa-993/M993-MUSA.html
     interval: 1h
 
+  - name: nb_rebel_v5
+    type: newbalance
+    # Canonical product URL — strip dwvar_* style/size/width selectors, they're cart-state.
+    url: https://www.newbalance.com/pd/fuelcell-rebel-v5/MFCXV5-50690.html
+    interval: 1h
+
 # Add more later, e.g.:
 #  - name: jd_airpods_pro
 #    type: jd               # not yet implemented in v0.1
@@ -37,6 +43,12 @@ rules:
     when: "nb_993_grey.price <= nb_993_grey.min_30d"
     notify: [telegram]
     cooldown: 24h
+
+  - name: Rebel v5 跌破 $100
+    when: "nb_rebel_v5.price < 100"
+    notify: [telegram, macos]
+    cooldown: 6h
+    message: "FuelCell Rebel v5 dropped below $100 — check stock & size."
 
 notifiers:
   telegram:
